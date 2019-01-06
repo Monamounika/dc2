@@ -1,0 +1,86 @@
+$ aws --version
+aws-cli/1.11.82 Python/2.7.3 Linux/3.18.7+ botocore/1.5.45
+ 
+
+CONFIGURATION
+You will need to create a user on your AWS account and carefully configure it’s permissions and policies. I won’t cover this in detail, but the basics steps are:
+
+Log in the the AWS console web site.
+Go to the IAM Management Console > Users > Add user
+Type in a user name and select Programmatic access to get an access key ID and secret access key, instead of a password.
+Set up the user’s permissions.
+Apply the user credentials to AWS CLI on the Linux machine.
+In my situation, I’m using this for remote backups, so I restricted the user to a single S3 Bucket (‘my-bucket’ in this example), and only list and upload permissions, but not delete.
+
+Here’s my custom policy JSON:
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket",
+                "s3:GetBucketLocation",
+                "s3:ListBucketMultipartUploads"
+            ],
+            "Resource": "arn:aws:s3:::my-bucket",
+            "Condition": {}
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:AbortMultipartUpload",
+                "s3:GetObject",
+                "s3:GetObjectAcl",
+                "s3:GetObjectVersion",
+                "s3:GetObjectVersionAcl",
+                "s3:PutObject",
+                "s3:PutObjectAcl",
+                "s3:PutObjectAclVersion"
+            ],
+            "Resource": "arn:aws:s3:::my-bucket/*",
+            "Condition": {}
+        },
+        {
+            "Effect": "Allow",
+            "Action": "s3:ListAllMyBuckets",
+            "Resource": "*",
+            "Condition": {}
+        }
+    ]
+}
+
+
+$ aws configure
+AWS Access Key ID [None]: AYL4EOGE3GCG8PA9PDVN
+AWS Secret Access Key [None]: Zb5pCL0isKwbPvU6Zb5pLC0isKwbPvU6bZ5pLC0
+Default region name [None]:
+Default output format [None]:
+
+
+hat’s it! You should be ready to go 🙂
+
+EXAMPLE S3 OPERATIONS
+Here are a few basic examples on how to access S3 using command line.
+
+LIST THE CONTENTS OF AN S3 BUCKET
+$ aws s3 ls s3://my-bucket
+2017-05-04 13:30:36      51969 picture.jpg
+LIST THE CONTENTS OF AN S3 BUCKET DIRECTORY
+$ aws s3 ls s3://my-bucket/some/directory/
+2017-05-03 13:39:42   13080027 20170502-1229_backup.zip
+2017-05-04 13:48:13   13090301 20170503-1241_backup.zip
+2017-05-04 14:56:19        675 profile.txt
+UPLOAD A FILE TO S3
+$ aws s3 cp local-file.zip s3://my-bucket/folder/remote-file.zip
+upload: ./local-file.zip to s3://my-bucket/folder/remote-file.zip
+DELETE A FILE FROM S3
+Note: I received an access denied message because my user should not be allowed to delete files.
+
+$ aws s3 rm s3://my-bucket/some/directory/profile.txt
+delete failed: s3://my-bucket/some/directory/profile.txt An error occurred (AccessDenied) when calling the DeleteObject operation: Access Denied
+
+
+
+https://dariancabot.com/2017/05/07/aws-s3-uploading-and-downloading-from-linux-command-line/
